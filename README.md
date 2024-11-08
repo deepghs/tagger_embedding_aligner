@@ -34,7 +34,7 @@ painlessly.
 from ditk import logging
 from torch.utils.data import Dataset
 
-from aligner.dataset import EmbeddingDataset, get_block_file
+from aligner.dataset import EmbeddingDataset, get_block_file, get_samples_file
 from aligner.split import dataset_split
 from aligner.train import train_model
 
