@@ -118,6 +118,5 @@ if __name__ == '__main__':
         train_dataset=train_dataset,
         test_dataset=test_dataset,
         workdir='runs/xxx',
-        batch_size=2,
-        num_workers=1,
+        batch_size=16,
     )
