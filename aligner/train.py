@@ -48,8 +48,7 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
         **options,
     )
 
-    sample_input, _ = test_dataset[0]
-    print(sample_input.shape)
+    sample_input, _, _ = test_dataset[0]
     torch_model_profile(model, torch.tensor(sample_input).unsqueeze(0))  # profile the model
 
     num_workers = num_workers or min(os.cpu_count(), batch_size)
