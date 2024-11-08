@@ -133,7 +133,7 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
                 test_sims /= test_total
                 test_norms /= test_total
                 test_mse /= test_total
-                logging.info(f'Test #{epoch}, loss: {test_loss:.6f}, emb cosine similarity: {train_sims:.6f}, '
+                logging.info(f'Test #{epoch}, loss: {test_loss:.6f}, emb cosine similarity: {test_sims:.6f}, '
                              f'norm abs error: {test_norms:.6f}, pred mse: {test_mse:.6f}')
                 tb_writer.add_scalar('test/loss', test_loss, epoch)
                 tb_writer.add_scalar('test/emb_cos', test_sims, epoch)
@@ -159,7 +159,7 @@ if __name__ == '__main__':
         suffix_model_name=tagger_name,
         model_name=model_name,
         workdir=f'runs/{tagger_name}_m_{model_name}',
-        batch_size=128,
+        batch_size=16,
         learning_rate=1e-3,
         num_workers=16,
     )
