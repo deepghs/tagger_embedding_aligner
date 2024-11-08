@@ -133,8 +133,8 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
                 test_sims /= test_total
                 test_norms /= test_total
                 test_mse /= test_total
-                logging.info(f'Test #{epoch}, loss: {test_loss:.6f}, emb cosine similarity: {train_sims}, '
-                             f'norm abs error: {test_norms:.6f}, pred mse: {test_mse}')
+                logging.info(f'Test #{epoch}, loss: {test_loss:.6f}, emb cosine similarity: {train_sims:.6f}, '
+                             f'norm abs error: {test_norms:.6f}, pred mse: {test_mse:.6f}')
                 tb_writer.add_scalar('test/loss', test_loss, epoch)
                 tb_writer.add_scalar('test/emb_cos', test_sims, epoch)
                 tb_writer.add_scalar('test/emb_norms', test_norms, epoch)
