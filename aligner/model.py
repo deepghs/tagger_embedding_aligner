@@ -31,6 +31,26 @@ class SimpleEmbeddingConverter(nn.Module):
 register_converter('simple', SimpleEmbeddingConverter)
 
 
+class SimpleNumberBased(nn.Module):
+    def __init__(self, n: int = 1024, **kwargs):
+        nn.Module.__init__(self)
+        _ = kwargs
+
+        self.fc1 = nn.Linear(n, int(n * 1.5))
+        self.fc2 = nn.Linear(int(n * 1.5), n // 2)
+        self.fc3 = nn.Linear(n // 2, 1)
+
+    def forward(self, x):
+        origin_x = x
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x * origin_x
+
+
+register_converter('simple_num', SimpleNumberBased)
+
+
 class _Model(nn.Module):
     def __init__(self, converter: nn.Module, suffix: nn.Module):
         nn.Module.__init__(self)

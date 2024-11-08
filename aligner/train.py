@@ -14,7 +14,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from .dataset import _get_samples_file, EmbeddingDataset, dataset_split
-from .model import get_model
+from .model_name import get_model
 from .profile import torch_model_profile
 
 
@@ -76,7 +76,7 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
         model.train()
         train_lr = scheduler.get_last_lr()[0]
 
-        train_loss, train_sims, train_norms = 0.0, 0.0, 0.0
+        train_loss, train_sims, train_norms, train_mse = 0.0, 0.0, 0.0, 0.0
         train_total = 0
         for i, (input_embs, output_preds, input_norm) in enumerate(
                 tqdm(train_dataloader, desc=f'Train epoch #{epoch}')):
@@ -95,22 +95,25 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
             train_loss += loss.item() * input_embs.size(0)
             train_sims += F.cosine_similarity(input_embs, output_embs, dim=-1).sum()
             train_norms += torch.abs(input_norm - torch.norm(output_embs, dim=-1)).sum()
+            train_mse += mse(outputs, output_preds).item() * input_embs.size(0)
             scheduler.step()
 
         train_loss /= train_total
         train_sims /= train_total
         train_norms /= train_total
+        train_mse /= train_total
         logging.info(f'Train #{epoch}, LR: {train_lr:.6f}, '
                      f'loss: {train_loss:.6f}, emb cosine similarity: {train_sims:.6f}, '
-                     f'norm abs error: {train_norms:.6f}')
+                     f'norm abs error: {train_norms:.6f}, pred mse: {train_mse:.6f}')
         tb_writer.add_scalar('train/loss', train_loss, epoch)
         tb_writer.add_scalar('train/emb_cos', train_sims, epoch)
         tb_writer.add_scalar('train/emb_norms', train_norms, epoch)
+        tb_writer.add_scalar('train/pred_mse', train_mse, epoch)
         tb_writer.add_scalar('train/learning_rate', train_lr, epoch)
 
         if epoch % eval_epoch == 0:
             model.eval()
-            test_loss, test_sims, test_norms = 0.0, 0.0, 0.0
+            test_loss, test_sims, test_norms, test_mse = 0.0, 0.0, 0.0, 0.0
             test_total = 0
             with torch.no_grad():
                 for i, (input_embs, output_preds, input_norm) in enumerate(tqdm(test_dataloader)):
@@ -124,23 +127,27 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
                     test_loss += loss.item() * input_embs.size(0)
                     test_sims += F.cosine_similarity(input_embs, output_embs, dim=-1).sum()
                     test_norms += torch.abs(input_norm - torch.norm(output_embs, dim=-1)).sum()
+                    test_mse += mse(outputs, output_preds).item() * input_embs.size(0)
 
                 test_loss /= test_total
                 test_sims /= test_total
                 test_norms /= test_total
+                test_mse /= test_total
                 logging.info(f'Test #{epoch}, loss: {test_loss:.6f}, emb cosine similarity: {train_sims}, '
-                             f'norm abs error: {test_norms:.6f}')
+                             f'norm abs error: {test_norms:.6f}, pred mse: {test_mse}')
                 tb_writer.add_scalar('test/loss', test_loss, epoch)
                 tb_writer.add_scalar('test/emb_cos', test_sims, epoch)
                 tb_writer.add_scalar('test/emb_norms', test_norms, epoch)
+                tb_writer.add_scalar('test/pred_mse', test_mse, epoch)
 
 
 if __name__ == '__main__':
     logging.try_init_root(level=logging.INFO)
-    tagger = 'SwinV2_v3'
+    tagger_name = 'SwinV2_v3'
+    model_name = 'simple'
     dataset: Dataset = EmbeddingDataset(
         npz_files=[
-            _get_samples_file(model_name=tagger, samples=20000),
+            _get_samples_file(model_name=tagger_name, samples=20000),
         ]
     )
     test_ratio = 0.2
@@ -149,7 +156,9 @@ if __name__ == '__main__':
     train_model(
         train_dataset=train_dataset,
         test_dataset=test_dataset,
-        suffix_model_name=tagger,
-        workdir=f'runs/{tagger}',
-        batch_size=16,
+        suffix_model_name=tagger_name,
+        model_name=model_name,
+        workdir=f'runs/{tagger_name}_m_{model_name}',
+        batch_size=128,
+        learning_rate=1e-3,
     )
