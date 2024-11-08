@@ -158,7 +158,7 @@ if __name__ == '__main__':
         test_dataset=test_dataset,
         suffix_model_name=tagger_name,
         model_name=model_name,
-        workdir=f'runs/{tagger_name}_m_{model_name}',
+        workdir=f'runs/{tagger_name}_m_{model_name}_bs16',
         batch_size=16,
         learning_rate=1e-3,
         num_workers=16,
