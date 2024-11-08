@@ -161,4 +161,5 @@ if __name__ == '__main__':
         workdir=f'runs/{tagger_name}_m_{model_name}',
         batch_size=128,
         learning_rate=1e-3,
+        num_workers=16,
     )
