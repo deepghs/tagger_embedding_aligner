@@ -52,6 +52,24 @@ class SimpleNumberBased(nn.Module):
 register_converter('simple_num', SimpleNumberBased)
 
 
+class SimpleNumberBasedN2(nn.Module):
+    def __init__(self, n: int = 1024, **kwargs):
+        nn.Module.__init__(self)
+        _ = kwargs
+
+        self.fc1 = nn.Linear(n, int(n * 0.7))
+        self.fc2 = nn.Linear(int(n * 0.7), 1)
+
+    def forward(self, x):
+        origin_x = x
+        x = torch.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x * origin_x
+
+
+register_converter('simple_num_n2', SimpleNumberBasedN2)
+
+
 class _Model(nn.Module):
     def __init__(self, converter: nn.Module, suffix: nn.Module):
         nn.Module.__init__(self)
