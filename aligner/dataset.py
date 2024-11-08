@@ -31,15 +31,9 @@ class EmbeddingDataset(Dataset, Sized):
         Dataset.__init__(self)
         self.npz_files = npz_files
         _weights = [np.load(x) for x in self.npz_files]
-        self._lengths = np.array([x['embs'].shape[0] for x in _weights])
+        self._pairs = [(x['embs'], x['preds']) for x in _weights]
+        self._lengths = np.array([x.shape[0] for x, _ in self._pairs])
         self._prefixes = np.cumsum(self._lengths)
-        self._weights = {}
-
-    def _get_weights(self, idx):
-        if idx not in self._weights:
-            self._weights[idx] = np.load(self.npz_files[idx])
-
-        return self._weights[idx]
 
     def __getitem__(self, item):
         file_idx = np.searchsorted(self._prefixes, item, side='right')
@@ -49,10 +43,10 @@ class EmbeddingDataset(Dataset, Sized):
             idx_in_file = item - self._prefixes[file_idx - 1]
 
         # print(file_idx, idx_in_file)
-        data = self._get_weights(file_idx)
-        embedding = data['embs'][idx_in_file]
+        l_emb, l_pred = self._pairs[file_idx]
+        embedding = l_emb[idx_in_file]
         embedding /= np.linalg.norm(embedding)
-        prediction = data['preds'][idx_in_file]
+        prediction = l_pred[idx_in_file]
 
         return embedding, prediction
 
