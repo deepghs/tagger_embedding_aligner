@@ -80,7 +80,7 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
             output_preds = output_preds.float().to(accelerator.device)
 
             optimizer.zero_grad()
-            outputs = model(input_embs)
+            outputs, output_embs = model(input_embs)
             train_total += input_embs.shape[0]
 
             loss = loss_fn(outputs, output_preds)
@@ -88,7 +88,7 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
             accelerator.backward(loss)
             optimizer.step()
             train_loss += loss.item() * input_embs.size(0)
-            train_sims += F.cosine_similarity(input_embs, outputs, dim=-1).sum()
+            train_sims += F.cosine_similarity(input_embs, output_embs, dim=-1).sum()
             scheduler.step()
 
         train_loss /= train_total
@@ -105,12 +105,12 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
                     input_embs = input_embs.float().to(accelerator.device)
                     output_preds = output_preds.to(accelerator.device)
 
-                    outputs = model(input_embs)
+                    outputs, output_embs = model(input_embs)
                     test_total += input_embs.shape[0]
 
                     loss = loss_fn(outputs, output_preds)
                     test_loss += loss.item() * input_embs.size(0)
-                    test_sims += F.cosine_similarity(input_embs, outputs, dim=-1).sum()
+                    test_sims += F.cosine_similarity(input_embs, output_embs, dim=-1).sum()
 
                 test_loss /= test_total
                 test_sims /= test_total
