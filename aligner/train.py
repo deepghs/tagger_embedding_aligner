@@ -149,7 +149,7 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
 if __name__ == '__main__':
     logging.try_init_root(level=logging.INFO)
     tagger_name = 'SwinV2_v3'
-    model_name = 'simple'
+    model_name = 'simple_num'
     dataset: Dataset = EmbeddingDataset(
         npz_files=[
             _get_samples_file(model_name=tagger_name, samples=20000),
