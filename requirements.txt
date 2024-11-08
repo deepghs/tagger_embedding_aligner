@@ -10,3 +10,4 @@ di-toolkit
 accelerate
 thop
 tensorboard
+onnxruntime
