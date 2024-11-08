@@ -14,7 +14,7 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from .dataset import _get_samples_file, EmbeddingDataset, dataset_split, _get_block_file
+from .dataset import get_samples_file, EmbeddingDataset, dataset_split, get_block_file
 from .model import get_model
 from .profile import torch_model_profile
 
@@ -40,7 +40,7 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
         step_scheduler_with_optimizer=False,
     )
 
-    weights = np.load(_get_samples_file(model_name=suffix_model_name, samples=200))
+    weights = np.load(get_samples_file(model_name=suffix_model_name, samples=200))
     embedding_width = weights['embs'].shape[-1]
     logging.info(f'Tagger model type: {suffix_model_name!r}, embedding width: {embedding_width!r}.')
 
@@ -184,7 +184,7 @@ if __name__ == '__main__':
     dataset: Dataset = EmbeddingDataset(
         npz_files=[
             # _get_samples_file(model_name=tagger_name, samples=20000),
-            _get_block_file(model_name=tagger_name, block_id=i) for i in range(10)
+            get_block_file(model_name=tagger_name, block_id=i) for i in range(10)
         ]
     )
     test_ratio = 0.2

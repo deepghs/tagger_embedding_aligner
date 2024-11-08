@@ -10,7 +10,7 @@ from torch.utils.data import random_split
 _REPO_ID = 'deepghs/wd14_tagger_inversion'
 
 
-def _get_samples_file(model_name: str = 'SwinV2_v3', samples: int = 2000):
+def get_samples_file(model_name: str = 'SwinV2_v3', samples: int = 2000):
     return hf_hub_download(
         repo_id=_REPO_ID,
         repo_type='dataset',
@@ -18,7 +18,7 @@ def _get_samples_file(model_name: str = 'SwinV2_v3', samples: int = 2000):
     )
 
 
-def _get_block_file(model_name: str = 'SwinV2_v3', block_id: int = 0):
+def get_block_file(model_name: str = 'SwinV2_v3', block_id: int = 0):
     return hf_hub_download(
         repo_id=_REPO_ID,
         repo_type='dataset',
@@ -67,8 +67,8 @@ def dataset_split(dataset, ratios: List[float], seed: int = 0):
 if __name__ == '__main__':
     dataset = EmbeddingDataset(
         npz_files=[
-            _get_samples_file(samples=2000),
-            _get_samples_file(samples=20000),
+            get_samples_file(samples=2000),
+            get_samples_file(samples=20000),
         ]
     )
     print(len(dataset))
