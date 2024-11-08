@@ -11,3 +11,7 @@ accelerate
 thop
 tensorboard
 onnxruntime
+onnx
+onnxoptimizer
+onnxsim
+click>=8

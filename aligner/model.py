@@ -1,3 +1,4 @@
+import os
 from typing import Type
 
 import torch
@@ -66,6 +67,26 @@ def get_model(model_name: str, n: int = 1024, suffix_model_name: str = 'SwinV2_v
     converter = _KNOWN_CONVERTERS[model_name](n=n, **options)
     suffix = get_suffix_linear(suffix_model_name)
     return _Model(converter, suffix)
+
+
+def open_model_with_data(model_file: str):
+    if os.path.exists(model_file):
+        if os.path.isfile(model_file):
+            data = torch.load(model_file, map_location='cpu')
+            model = get_model(**data['model_options'])
+            existing_keys = set(model.state_dict())
+            state_dict = {key: value for key, value in data['state_dict'].items() if key in existing_keys}
+            model.load_state_dict(state_dict)
+            return model, data
+        else:
+            return open_model_with_data(os.path.join(model_file, 'best.pt'))
+    else:
+        raise FileNotFoundError(f'Model {model_file!r} not found.')
+
+
+def open_model(model_file: str):
+    model, data = open_model_with_data(model_file)
+    return model
 
 
 if __name__ == '__main__':
