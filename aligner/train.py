@@ -14,7 +14,7 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from .dataset import _get_samples_file, EmbeddingDataset, dataset_split
+from .dataset import _get_samples_file, EmbeddingDataset, dataset_split, _get_block_file
 from .model import get_model
 from .profile import torch_model_profile
 
@@ -183,7 +183,8 @@ if __name__ == '__main__':
     model_name = 'simple_num'
     dataset: Dataset = EmbeddingDataset(
         npz_files=[
-            _get_samples_file(model_name=tagger_name, samples=20000),
+            # _get_samples_file(model_name=tagger_name, samples=20000),
+            _get_block_file(model_name=tagger_name, block_id=i) for i in range(10)
         ]
     )
     test_ratio = 0.2
@@ -194,7 +195,7 @@ if __name__ == '__main__':
         test_dataset=test_dataset,
         suffix_model_name=tagger_name,
         model_name=model_name,
-        workdir=f'runs/{tagger_name}_m_{model_name}_bs16_save',
+        workdir=f'runs/{tagger_name}_m_{model_name}_bs16_10blocks',
         batch_size=16,
         learning_rate=1e-3,
         num_workers=16,
