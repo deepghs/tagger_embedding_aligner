@@ -14,7 +14,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from .dataset import _get_samples_file, EmbeddingDataset, dataset_split
-from .model_name import get_model
+from .model import get_model
 from .profile import torch_model_profile
 
 
