@@ -1,0 +1,12 @@
+torch<2
+dghs-imgutils>=0.7.0
+hfutils
+hbutils
+pillow
+numpy
+scipy
+tqdm
+di-toolkit
+accelerate
+thop
+tensorboard
