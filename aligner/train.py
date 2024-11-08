@@ -3,6 +3,7 @@ from typing import Optional
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from accelerate import Accelerator
 from ditk import logging
 from hbutils.random import global_seed
@@ -18,7 +19,7 @@ from .profile import torch_model_profile
 
 
 def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
-                batch_size: int = 16, max_epochs: int = 500, eval_epoch: int = 1,
+                batch_size: int = 16, max_epochs: int = 100, eval_epoch: int = 1,
                 num_workers: Optional[int] = None, learning_rate: float = 0.001, weight_decay: float = 1e-3,
                 model_name: str = 'simple', suffix_model_name: str = 'SwinV2_v3',
                 seed: int = 0, **options):
@@ -72,7 +73,7 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
 
     for epoch in range(1, max_epochs + 1):
         model.train()
-        train_loss = 0.0
+        train_loss, train_sims = 0.0, 0.0
         train_total = 0
         for i, (input_embs, output_preds) in enumerate(tqdm(train_dataloader, desc=f'Train epoch #{epoch}')):
             input_embs = input_embs.float().to(accelerator.device)
@@ -83,18 +84,21 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
             train_total += input_embs.shape[0]
 
             loss = loss_fn(outputs, output_preds)
+
             accelerator.backward(loss)
             optimizer.step()
             train_loss += loss.item() * input_embs.size(0)
+            train_sims += F.cosine_similarity(input_embs, outputs, dim=-1).sum()
             scheduler.step()
 
-        train_loss = train_loss / train_total
-        logging.info(f'Train #{epoch}, loss: {train_loss:.6f}')
+        train_loss /= train_total
+        train_sims /= train_total
+        logging.info(f'Train #{epoch}, loss: {train_loss:.6f}, emb cosine similarity: {train_sims}')
         tb_writer.add_scalar('train/loss', train_loss, epoch)
 
         if epoch % eval_epoch == 0:
             model.eval()
-            test_loss = 0.0
+            test_loss, test_sims = 0.0, 0
             test_total = 0
             with torch.no_grad():
                 for i, (input_embs, output_preds) in enumerate(tqdm(test_dataloader)):
@@ -106,17 +110,20 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
 
                     loss = loss_fn(outputs, output_preds)
                     test_loss += loss.item() * input_embs.size(0)
+                    test_sims += F.cosine_similarity(input_embs, outputs, dim=-1).sum()
 
                 test_loss /= test_total
-                logging.info(f'Test #{epoch}, loss: {test_loss:.6f}')
+                test_sims /= test_total
+                logging.info(f'Test #{epoch}, loss: {test_loss:.6f}, emb cosine similarity: {train_sims}')
                 tb_writer.add_scalar('test/loss', test_loss, epoch)
 
 
 if __name__ == '__main__':
     logging.try_init_root(level=logging.INFO)
+    tagger = 'SwinV2_v3'
     dataset: Dataset = EmbeddingDataset(
         npz_files=[
-            _get_samples_file(samples=20000),
+            _get_samples_file(model_name=tagger, samples=20000),
         ]
     )
     test_ratio = 0.2
@@ -125,6 +132,7 @@ if __name__ == '__main__':
     train_model(
         train_dataset=train_dataset,
         test_dataset=test_dataset,
-        workdir='runs/xxx',
+        suffix_model_name=tagger,
+        workdir=f'runs/{tagger}',
         batch_size=16,
     )
