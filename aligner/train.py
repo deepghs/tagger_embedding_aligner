@@ -100,8 +100,8 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
             accelerator.backward(loss)
             optimizer.step()
             train_loss += loss.item() * input_embs.size(0)
-            train_sims += F.cosine_similarity(input_embs, output_embs, dim=-1).sum()
-            train_norms += torch.abs(input_norm - torch.norm(output_embs, dim=-1)).sum()
+            train_sims += F.cosine_similarity(input_embs, output_embs, dim=-1).sum().item()
+            train_norms += torch.abs(input_norm - torch.norm(output_embs, dim=-1)).sum().item()
             train_mse += mse(outputs, output_preds).item() * input_embs.size(0)
             scheduler.step()
 
@@ -134,8 +134,8 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
 
                     loss = loss_fn(outputs, output_preds)
                     test_loss += loss.item() * input_embs.size(0)
-                    test_sims += F.cosine_similarity(input_embs, output_embs, dim=-1).sum()
-                    test_norms += torch.abs(input_norm - torch.norm(output_embs, dim=-1)).sum()
+                    test_sims += F.cosine_similarity(input_embs, output_embs, dim=-1).sum().item()
+                    test_norms += torch.abs(input_norm - torch.norm(output_embs, dim=-1)).sum().item()
                     test_mse += mse(outputs, output_preds).item() * input_embs.size(0)
 
                 test_loss /= test_total
@@ -153,7 +153,7 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
                     tb_writer.add_scalar(f'test/{key}', value, epoch)
 
                 metric = test_metrics[pick_by]
-                if best_metric is None and (
+                if best_metric is None or (
                         (pick_order == 'asc' and metric > best_metric) or
                         (pick_order == 'desc' and metric < best_metric)
                 ):
