@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Optional
 
@@ -42,12 +43,15 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
     embedding_width = weights['embs'].shape[-1]
     logging.info(f'Tagger model type: {suffix_model_name!r}, embedding width: {embedding_width!r}.')
 
-    model: nn.Module = get_model(
+    model_options = dict(
         model_name=model_name,
         n=embedding_width,
         suffix_model_name=suffix_model_name,
         **options,
     )
+    model: nn.Module = get_model(**model_options)
+    with open(os.path.join(workdir, 'model.json'), 'w') as f:
+        json.dump(model_options, f, ensure_ascii=False, indent=4, sort_keys=True)
 
     sample_input, _, _ = test_dataset[0]
     torch_model_profile(model, torch.tensor(sample_input).unsqueeze(0))  # profile the model
