@@ -73,7 +73,7 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
     for epoch in range(1, max_epochs + 1):
         model.train()
         train_loss = 0.0
-        for i, (input_embs, output_preds) in enumerate(tqdm(train_dataloader)):
+        for i, (input_embs, output_preds) in enumerate(tqdm(train_dataloader, desc=f'Train epoch #{epoch}')):
             input_embs = input_embs.float().to(accelerator.device)
             output_preds = output_preds.float().to(accelerator.device)
 
@@ -86,21 +86,23 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
             train_loss += loss.item() * input_embs.size(0)
             scheduler.step()
 
+        logging.info(f'Train #{epoch}, loss: {train_loss:.6f}')
         tb_writer.add_scalar('train/loss', train_loss, epoch)
 
         if epoch % eval_epoch == 0:
             model.eval()
             test_loss = 0.0
             with torch.no_grad():
-                for i, (ids, inputs, *_visuals, labels_) in enumerate(tqdm(test_dataloader)):
-                    inputs = inputs.float().to(accelerator.device)
-                    labels_ = labels_.to(accelerator.device)
+                for i, (input_embs, output_preds) in enumerate(tqdm(test_dataloader)):
+                    input_embs = input_embs.float().to(accelerator.device)
+                    output_preds = output_preds.to(accelerator.device)
 
-                    outputs = model(inputs)
+                    outputs = model(input_embs)
 
-                    loss = loss_fn(outputs, labels_)
-                    test_loss += loss.item() * inputs.size(0)
+                    loss = loss_fn(outputs, output_preds)
+                    test_loss += loss.item() * input_embs.size(0)
 
+                logging.info(f'Test #{epoch}, loss: {test_loss:.6f}')
                 tb_writer.add_scalar('test/loss', test_loss, epoch)
 
 
