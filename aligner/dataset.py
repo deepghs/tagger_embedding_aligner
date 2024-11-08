@@ -45,10 +45,11 @@ class EmbeddingDataset(Dataset, Sized):
         # print(file_idx, idx_in_file)
         l_emb, l_pred = self._pairs[file_idx]
         embedding = l_emb[idx_in_file]
-        embedding /= np.linalg.norm(embedding)
+        norm_value = np.linalg.norm(embedding)
+        embedding /= norm_value
         prediction = l_pred[idx_in_file]
 
-        return embedding, prediction
+        return embedding, prediction, norm_value
 
     def __len__(self):
         return self._prefixes[-1]

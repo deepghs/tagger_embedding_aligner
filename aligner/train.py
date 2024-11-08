@@ -67,17 +67,23 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
         pct_start=0.15, final_div_factor=20.
     )
 
+    mse = nn.MSELoss()
+
     # noinspection PyTypeChecker
-    model, optimizer, train_dataloader, test_dataloader, scheduler, loss_fn = \
-        accelerator.prepare(model, optimizer, train_dataloader, test_dataloader, scheduler, loss_fn)
+    model, optimizer, train_dataloader, test_dataloader, scheduler, loss_fn, mse = \
+        accelerator.prepare(model, optimizer, train_dataloader, test_dataloader, scheduler, loss_fn, mse)
 
     for epoch in range(1, max_epochs + 1):
         model.train()
-        train_loss, train_sims = 0.0, 0.0
+        train_lr = scheduler.get_last_lr()[0]
+
+        train_loss, train_sims, train_norms = 0.0, 0.0, 0.0
         train_total = 0
-        for i, (input_embs, output_preds) in enumerate(tqdm(train_dataloader, desc=f'Train epoch #{epoch}')):
+        for i, (input_embs, output_preds, input_norm) in enumerate(
+                tqdm(train_dataloader, desc=f'Train epoch #{epoch}')):
             input_embs = input_embs.float().to(accelerator.device)
             output_preds = output_preds.float().to(accelerator.device)
+            input_norm = input_norm.float().to(accelerator.device)
 
             optimizer.zero_grad()
             outputs, output_embs = model(input_embs)
@@ -89,19 +95,26 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
             optimizer.step()
             train_loss += loss.item() * input_embs.size(0)
             train_sims += F.cosine_similarity(input_embs, output_embs, dim=-1).sum()
+            train_norms += torch.abs(input_norm - torch.norm(output_embs, dim=-1)).sum()
             scheduler.step()
 
         train_loss /= train_total
         train_sims /= train_total
-        logging.info(f'Train #{epoch}, loss: {train_loss:.6f}, emb cosine similarity: {train_sims}')
+        train_norms /= train_total
+        logging.info(f'Train #{epoch}, LR: {train_lr:.6f}, '
+                     f'loss: {train_loss:.6f}, emb cosine similarity: {train_sims:.6f}, '
+                     f'norm abs error: {train_norms:.6f}')
         tb_writer.add_scalar('train/loss', train_loss, epoch)
+        tb_writer.add_scalar('train/emb_cos', train_sims, epoch)
+        tb_writer.add_scalar('train/emb_norms', train_norms, epoch)
+        tb_writer.add_scalar('train/learning_rate', train_lr, epoch)
 
         if epoch % eval_epoch == 0:
             model.eval()
-            test_loss, test_sims = 0.0, 0
+            test_loss, test_sims, test_norms = 0.0, 0.0, 0.0
             test_total = 0
             with torch.no_grad():
-                for i, (input_embs, output_preds) in enumerate(tqdm(test_dataloader)):
+                for i, (input_embs, output_preds, input_norm) in enumerate(tqdm(test_dataloader)):
                     input_embs = input_embs.float().to(accelerator.device)
                     output_preds = output_preds.to(accelerator.device)
 
@@ -111,11 +124,16 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
                     loss = loss_fn(outputs, output_preds)
                     test_loss += loss.item() * input_embs.size(0)
                     test_sims += F.cosine_similarity(input_embs, output_embs, dim=-1).sum()
+                    test_norms += torch.abs(input_norm - torch.norm(output_embs, dim=-1)).sum()
 
                 test_loss /= test_total
                 test_sims /= test_total
-                logging.info(f'Test #{epoch}, loss: {test_loss:.6f}, emb cosine similarity: {train_sims}')
+                test_norms /= test_total
+                logging.info(f'Test #{epoch}, loss: {test_loss:.6f}, emb cosine similarity: {train_sims}, '
+                             f'norm abs error: {test_norms:.6f}')
                 tb_writer.add_scalar('test/loss', test_loss, epoch)
+                tb_writer.add_scalar('test/emb_cos', test_sims, epoch)
+                tb_writer.add_scalar('test/emb_norms', test_norms, epoch)
 
 
 if __name__ == '__main__':
