@@ -31,6 +31,7 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
         global_seed(seed)
 
     tb_writer = SummaryWriter(workdir)
+    logging.info(f'Using work directory {workdir!r} ...')
 
     accelerator = Accelerator(
         # mixed_precision=self.cfgs.mixed_precision,
