@@ -115,6 +115,43 @@ class NumBasedMLPConverter(nn.Module):
 register_converter('num', NumBasedMLPConverter)
 
 
+class Num0Converter(NumBasedMLPConverter):
+    def __init__(self, n: int = 1024, **kwargs):
+        NumBasedMLPConverter.__init__(
+            self,
+            n=n,
+            layers=[],
+            **kwargs
+        )
+
+
+class Num1Converter(NumBasedMLPConverter):
+    def __init__(self, n: int = 1024, dropout_rate: float = 0.3, **kwargs):
+        NumBasedMLPConverter.__init__(
+            self,
+            n=n,
+            layers=[1.2],
+            dropout_rate=dropout_rate,
+            **kwargs,
+        )
+
+
+class Num2Converter(NumBasedMLPConverter):
+    def __init__(self, n: int = 1024, dropout_rate: float = 0.3, **kwargs):
+        NumBasedMLPConverter.__init__(
+            self,
+            n=n,
+            layers=[0.5, 0.35],
+            dropout_rate=dropout_rate,
+            **kwargs,
+        )
+
+
+register_converter('num0', Num0Converter)
+register_converter('num1', Num1Converter)
+register_converter('num2', Num2Converter)
+
+
 class _Model(nn.Module):
     def __init__(self, converter: nn.Module, suffix: nn.Module):
         nn.Module.__init__(self)
