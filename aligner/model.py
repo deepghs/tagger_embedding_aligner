@@ -100,7 +100,12 @@ class NumBasedMLPConverter(nn.Module):
     def __init__(self, n: int = 1024, layers: Optional[List[Union[int, float]]] = None,
                  dropout_rate: float = 0.2, **kwargs):
         nn.Module.__init__(self)
-        self.mlp = NumMLP(n=n, layers=layers or _DEFAULT_LAYERS, dropout_rate=dropout_rate, **kwargs)
+        self.mlp = NumMLP(
+            n=n,
+            layers=_DEFAULT_LAYERS if layers is None else layers,
+            dropout_rate=dropout_rate,
+            **kwargs
+        )
 
     def forward(self, x):
         rate = self.mlp(x)
