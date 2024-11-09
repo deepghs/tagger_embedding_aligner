@@ -53,6 +53,7 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
     model: nn.Module = get_model(**model_options)
     with open(os.path.join(workdir, 'model.json'), 'w') as f:
         json.dump(model_options, f, ensure_ascii=False, indent=4, sort_keys=True)
+    logging.info(f'Model structure:\n{model}')
 
     sample_input, _, _ = test_dataset[0]
     torch_model_profile(model, torch.tensor(sample_input).unsqueeze(0))  # profile the model

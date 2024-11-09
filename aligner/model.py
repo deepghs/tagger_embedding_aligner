@@ -1,5 +1,5 @@
 import os
-from typing import Type
+from typing import Type, Optional, List, Union
 
 import torch
 from torch import nn
@@ -70,6 +70,46 @@ class SimpleNumberBasedN2(nn.Module):
 register_converter('simple_num_n2', SimpleNumberBasedN2)
 
 
+class NumMLP(nn.Module):
+    def __init__(self, n: int = 1024, layers: Optional[List[Union[int, float]]] = None,
+                 dropout_rate: float = 0.2, **kwargs):
+        nn.Module.__init__(self)
+        _ = kwargs
+        layers = [
+            x if isinstance(x, int) else int(round(x * n))
+            for x in (layers or [])
+        ]
+        _layers = []
+
+        layers = [n, *layers]
+        for prev_layer, next_layer in zip(layers[:-1], layers[1:]):
+            _layers.append(nn.Linear(prev_layer, next_layer))
+            _layers.append(nn.ReLU())
+            _layers.append(nn.Dropout(p=dropout_rate))
+        _layers.append(nn.Linear(layers[-1], 1))
+        self._layers = nn.Sequential(*_layers)
+
+    def forward(self, x):
+        return self._layers(x)
+
+
+_DEFAULT_LAYERS = [1.5, 0.5]
+
+
+class NumBasedMLPConverter(nn.Module):
+    def __init__(self, n: int = 1024, layers: Optional[List[Union[int, float]]] = None,
+                 dropout_rate: float = 0.2, **kwargs):
+        nn.Module.__init__(self)
+        self.mlp = NumMLP(n=n, layers=layers or _DEFAULT_LAYERS, dropout_rate=dropout_rate, **kwargs)
+
+    def forward(self, x):
+        rate = self.mlp(x)
+        return x * rate
+
+
+register_converter('num', NumBasedMLPConverter)
+
+
 class _Model(nn.Module):
     def __init__(self, converter: nn.Module, suffix: nn.Module):
         nn.Module.__init__(self)
@@ -108,8 +148,10 @@ def open_model(model_file: str):
 
 
 if __name__ == '__main__':
-    model = get_model('simple', n=1024)
+    model = get_model('num', n=1024, dropout_rate=0.5)
+    print(model)
     input_ = torch.randn(2, 1024)
     with torch.no_grad():
-        output = model(input_)
-        print(output.shape)
+        prediction, embedding = model(input_)
+        print(embedding.shape, embedding.dtype)
+        print(prediction.shape, prediction.dtype)
