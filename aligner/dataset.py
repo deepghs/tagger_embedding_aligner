@@ -1,11 +1,14 @@
+import logging
 from collections.abc import Sized
 from typing import List
 
 import numpy as np
 from hbutils.random import keep_global_state, global_seed
+from hbutils.string import plural_word
 from huggingface_hub import hf_hub_download
 from torch.utils.data import Dataset
 from torch.utils.data import random_split
+from tqdm import tqdm
 
 _REPO_ID = 'deepghs/wd14_tagger_inversion'
 
@@ -30,10 +33,17 @@ class EmbeddingDataset(Dataset, Sized):
     def __init__(self, npz_files: List[str]):
         Dataset.__init__(self)
         self.npz_files = npz_files
-        _weights = [np.load(x) for x in self.npz_files]
-        self._pairs = [(x['embs'], x['preds']) for x in _weights]
-        self._lengths = np.array([x.shape[0] for x, _ in self._pairs])
+
+        self._pairs, self._lengths = [], []
+        for npz_file in tqdm(self.npz_files, desc='Loading Emb Files'):
+            _weight = np.load(npz_file)
+            embs, preds = _weight['embs'], _weight['preds']
+            self._pairs.append((embs, preds))
+            self._lengths.append(embs.shape[0])
+
+        self._lengths = np.array(self._lengths)
         self._prefixes = np.cumsum(self._lengths)
+        logging.info(f'{plural_word(self._prefixes[-1].item(), "sample")} in total found in {self!r}.')
 
     def __getitem__(self, item):
         file_idx = np.searchsorted(self._prefixes, item, side='right')
