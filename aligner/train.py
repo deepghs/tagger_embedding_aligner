@@ -58,7 +58,8 @@ def train_model(workdir: str, train_dataset: Dataset, test_dataset: Dataset,
     sample_input, _, _ = test_dataset[0]
     torch_model_profile(model, torch.tensor(sample_input).unsqueeze(0))  # profile the model
 
-    num_workers = num_workers or min(os.cpu_count(), batch_size)
+    num_workers = min(os.cpu_count(), batch_size) if num_workers is None else num_workers
+    num_workers = 0
     train_dataloader = DataLoader(
         train_dataset, batch_size=batch_size,
         shuffle=True, num_workers=num_workers, drop_last=True
