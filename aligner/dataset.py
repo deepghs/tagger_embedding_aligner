@@ -80,7 +80,12 @@ class LMDBDataset(Dataset):
             if value is None:
                 raise IndexError(f"Index {index} out of range")
             item = pickle.loads(value)
-        return item['embs'], item['preds']
+
+        embedding, prediction = item['embs'], item['preds']
+        norm_value = np.linalg.norm(embedding)
+        embedding /= norm_value
+
+        return embedding, prediction, norm_value
 
     def __len__(self):
         return self.length
