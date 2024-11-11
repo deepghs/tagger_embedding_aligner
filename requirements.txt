@@ -17,3 +17,4 @@ onnxsim
 click>=8
 pandas
 tabulate
+lmdb

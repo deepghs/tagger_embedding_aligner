@@ -1,7 +1,9 @@
 import logging
+import pickle
 from collections.abc import Sized
 from typing import List
 
+import lmdb
 import numpy as np
 from hbutils.random import keep_global_state, global_seed
 from hbutils.string import plural_word
@@ -65,6 +67,25 @@ class EmbeddingDataset(Dataset, Sized):
         return self._prefixes[-1]
 
 
+class LMDBDataset(Dataset):
+    def __init__(self, lmdb_path):
+        self.env = lmdb.open(lmdb_path, readonly=True, lock=False, readahead=False, meminit=False)
+        with self.env.begin(write=False) as txn:
+            self.length = txn.stat()['entries']
+
+    def __getitem__(self, index):
+        with self.env.begin(write=False) as txn:
+            key = f'sample_{index}'.encode('ascii')
+            value = txn.get(key)
+            if value is None:
+                raise IndexError(f"Index {index} out of range")
+            item = pickle.loads(value)
+        return item['embs'], item['preds']
+
+    def __len__(self):
+        return self.length
+
+
 @keep_global_state()
 def dataset_split(dataset, ratios: List[float], seed: int = 0):
     global_seed(seed)
@@ -75,12 +96,13 @@ def dataset_split(dataset, ratios: List[float], seed: int = 0):
 
 
 if __name__ == '__main__':
-    dataset = EmbeddingDataset(
-        npz_files=[
-            get_samples_file(samples=2000),
-            get_samples_file(samples=20000),
-        ]
-    )
+    # dataset = EmbeddingDataset(
+    #     npz_files=[
+    #         get_samples_file(samples=2000),
+    #         get_samples_file(samples=20000),
+    #     ]
+    # )
+    dataset = LMDBDataset('test_lmdb')
     print(len(dataset))
 
     emb, pred = dataset[0]
