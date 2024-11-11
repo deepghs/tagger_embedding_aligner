@@ -102,7 +102,8 @@ if __name__ == '__main__':
     #         get_samples_file(samples=20000),
     #     ]
     # )
-    dataset = LMDBDataset('test_lmdb')
+    # dataset = LMDBDataset('test_lmdb')
+    dataset = LMDBDataset('/data/tagger_embeddings_lmdb/SwinV2_v3')
     print(len(dataset))
 
     emb, pred = dataset[0]
