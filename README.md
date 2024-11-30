@@ -2,6 +2,8 @@
 
 Tagger embedding aligner for smilingwolf's taggers
 
+Our current models: https://huggingface.co/deepghs/wd14_tagger_embedding_denormalize
+
 ## Why We Have To Do This
 
 Smilingwolf's tagger generates embeddings for given images, which are then processed through a fully connected layer and
